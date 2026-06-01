@@ -2,3 +2,4 @@ markov/__pycache__/
 source/__pycache__/
 visualization/__pycache__/
 tests/
+__pycache__/

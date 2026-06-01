@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 import argparse
 import re
+import textwrap
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
@@ -43,9 +45,32 @@ def _parse_args() -> argparse.Namespace:
         "--outputs-dir",
         type=str,
         default="outputs",
-        help="Directory to save figures when --save-figures is set",
+        help="Directory for output_text.txt and figures when --save-figures is set",
     )
     return parser.parse_args()
+
+
+def _format_output_lines(text: str, *, width: int = 80) -> str:
+    """Break generated text into lines (by sentence, then word-wrap long runs)."""
+    stripped = text.strip()
+    if not stripped:
+        return ""
+
+    sentences = re.split(r"(?<=[.?!])\s+", stripped)
+    lines: list[str] = []
+    for sentence in sentences:
+        if len(sentence) <= width:
+            lines.append(sentence)
+        else:
+            lines.extend(textwrap.wrap(sentence, width=width))
+    return "\n".join(lines) + "\n"
+
+
+def _write_output_text(text: str, output_dir: Path) -> Path:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = output_dir / "output_text.txt"
+    path.write_text(_format_output_lines(text), encoding="utf-8")
+    return path
 
 def _save_figures(figures: list[tuple[str, plt.Figure]], output_dir: Path) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -68,7 +93,12 @@ def main() -> None:
     matrix.fit(indices, tokenizer.vocab_size)
 
     generated = generate(matrix, tokenizer, max_tokens=args.max_tokens)
-    print(_fix_punctuation(generated))
+    output_text = _fix_punctuation(generated)
+    print(output_text)
+
+    output_dir = Path(args.outputs_dir)
+    text_path = _write_output_text(output_text, output_dir)
+    print(f"Generated text saved to {text_path.resolve()}")
 
     if args.order > 1:
         print(
@@ -89,7 +119,7 @@ def main() -> None:
         ("entropy", plot_entropy(entropy, tokenizer)),
     ]
     if args.save_figures:
-        _save_figures(figures, Path(args.outputs_dir))
+        _save_figures(figures, output_dir)
     else:
         _show_figures(figures)
 

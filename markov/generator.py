@@ -3,8 +3,6 @@ import numpy as np
 from markov.matrix import Markov_Matrix, State
 from markov.tokenizer import Tokenizer
 
-_SENTENCE_ENDS = frozenset({".", "?", "!"})
-
 # sample text from a fitted matrix and tokenizer
 def generate(matrix: Markov_Matrix, tokenizer: Tokenizer, *, seed: str | None = None, max_tokens: int = 100) -> str:
     if matrix.vocab_size < 1:
@@ -19,10 +17,6 @@ def generate(matrix: Markov_Matrix, tokenizer: Tokenizer, *, seed: str | None = 
         row = matrix.get_row(state)
         next_idx = int(np.random.choice(matrix.vocab_size, p=row))
         output.append(next_idx)
-
-        token = tokenizer.index_to_word[next_idx]
-        if token in _SENTENCE_ENDS:
-            break
         state = tuple(state[1:] + (next_idx,))
 
     return " ".join(tokenizer.decode(output))
