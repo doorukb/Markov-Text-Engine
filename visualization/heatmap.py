@@ -8,14 +8,29 @@ from markov.tokenizer import Tokenizer
 def _token_labels(tokenizer: Tokenizer, indices: list[int] | range) -> list[str]:
     return [tokenizer.index_to_word[int(i)] for i in indices]
 
-# transition matrix heatmap for the first vocabulary that hit max tokens
+
+def _row_entropy(transition: np.ndarray) -> np.ndarray:
+    with np.errstate(divide="ignore", invalid="ignore"):
+        terms = np.where(transition > 0, -transition * np.log2(transition), 0.0)
+    return terms.sum(axis=1)
+
+
 def plot_matrix(matrix: Markov_Matrix, tokenizer: Tokenizer, *, max_tokens: int = 40) -> Figure:
+    """Transition matrix heatmap for a subset of tokens (order-1 only).
+
+    Vocabulary indices follow tokenizer insertion order (first-seen in corpus),
+    not frequency. The displayed subset is the top *max_tokens* by row entropy so
+    the most structurally interesting (uncertain) contexts are shown.
+    """
     if matrix.order != 1 or matrix._matrix is None:
         raise ValueError("plot_matrix requires an order-1 matrix")
 
-    n = min(max_tokens, matrix.vocab_size)
-    subset = matrix._matrix[:n, :n]
-    labels = _token_labels(tokenizer, range(n))
+    transition = matrix._matrix
+    vocab_size = matrix.vocab_size
+    n = min(max_tokens, vocab_size)
+    ranked = np.argsort(_row_entropy(transition))[::-1][:n]
+    subset = transition[np.ix_(ranked, ranked)]
+    labels = _token_labels(tokenizer, ranked.tolist())
 
     fig, ax = plt.subplots(figsize=(10, 8))
     im = ax.imshow(subset, aspect="auto", cmap="viridis", vmin=0.0, vmax=1.0)
@@ -25,7 +40,9 @@ def plot_matrix(matrix: Markov_Matrix, tokenizer: Tokenizer, *, max_tokens: int 
     ax.set_yticklabels(labels, fontsize=8)
     ax.set_xlabel("next token")
     ax.set_ylabel("current token")
-    ax.set_title(f"Transition probabilities (first {n} of {matrix.vocab_size} tokens, subset view)")
+    ax.set_title(
+        f"Transition probabilities (top {n} by row entropy, of {vocab_size} tokens)"
+    )
     fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
     fig.tight_layout()
     return fig
@@ -62,7 +79,6 @@ def plot_convergence(series: np.ndarray, tokenizer: Tokenizer, token_indices: li
     ax.set_ylabel("probability")
     ax.set_title("Convergence toward stationary distribution")
     ax.legend(loc="best", fontsize=9)
-    ax.set_ylim(0.0, 1.0)
     fig.tight_layout()
     return fig
 
