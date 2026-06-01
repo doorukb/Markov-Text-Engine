@@ -56,3 +56,38 @@ Available for order-1 models only, where the full stochastic matrix exists as a 
 **Entropy per state** computes the Shannon entropy of each row in the transition matrix. High-entropy rows correspond to tokens with uncertain futures. Low-entropy rows are tokens that almost always lead somewhere specific.
 
 **Top transitions** returns the k most probable next tokens for any given input token, with their probabilities.
+
+<br>
+
+## Example Input, Output, Analysis
+
+### Input (170 tokens) : 
+
+And the word of the Lord came unto the man, saying, Arise, and take thee a sandwich of peanut butter, even that which is pressed between two slices of fine bread, and thrust it deep into the narrow slot of the machine of silver, which men call the player of DVDs, that it may be a sign unto this generation. Then the man was sore afraid and cried out, saying, Alas, O Lord, for the bread is wedged tight within the iron jaws of the device, and the creamy substance thereof clingeth to the delicate lasers within, so that it will by no means come forth. But the Lord rebuked him, saying, Am I not the Lord who created both the wheat of the field and the plastics of the earth? Stretch forth thine hand and bring it out. So the man did what the Lord commanded him, and he took a knife of butter, and a wire of copper, and labored with great trembling until the sandwich was delivered whole from the machine, and he bowed his head and gave thanks unto the Most High.
+
+
+### Output (Order 1, 200 max tokens) : 
+
+for the player of the plastics of the wheat of the word of dvds that it will by no means come forth thine hand and labored with great trembling until the lord rebuked him and gave thanks unto the creamy substance thereof clingeth to the lord came unto the lord commanded him and thrust it out. so that it may be a sandwich of the device and he took a sandwich was sore afraid and he bowed his head and gave thanks unto the wheat of silver which is pressed between two slices of the most high. but the lord came unto the man did what the field and cried out saying arise and cried out. so the lord who created both the machine and he took a sandwich of copper and cried out saying am i not the lord commanded him saying alas o lord for the machine of peanut butter and a sandwich of silver which men call the device and take thee a sign unto this generation. but the bread and the player of copper and the bread and bring it may be a knife of peanut butter even that it deep into
+
+
+### Analysis : 
+#### Convergence Towards Stationary Distribution : 
+<img width="1000" height="500" alt="Convergence Toward Stationary Distribution" src="https://github.com/user-attachments/assets/360d5ce0-6951-47d8-b044-08a37bfac214" />
+
+Starting from a uniform distribution over all tokens, the state vector is repeatedly multiplied by the transition matrix. After enough steps it converges to the stationary distribution regardless of the starting point, which is one of the properties of Markov chains. The chain gradually forgets where it began. The plot tracks the probability mass on the five highest-stationary-weight tokens across steps, showing how each one stabilizes as the number of multiplications grows.
+
+#### Entropy per State : 
+<img width="1400" height="510" alt="Enthropy" src="https://github.com/user-attachments/assets/25e2fab5-4678-4af9-92f4-9e456eda8cce" />
+
+Measuring the uncertainty in each row of the transition matrix. A row with all its probability mass on one token has entropy zero, as such token has only one plausible successor. A row with uniform probability across all tokens has maximum entropy, and no information about what comes next. The left chart shows the highest-entropy tokens, the ones whose futures are most uncertain. The right chart shows the lowest-entropy tokens, the ones that lead somewhere specific almost every time. This helps us to see which words are pivot points and which are nearly deterministic.
+
+#### Transition Probability Heatmap : 
+<img width="1000" height="700" alt="Transition probabilities" src="https://github.com/user-attachments/assets/534979c3-a2ca-44b1-a390-51d5f6360eba" />
+
+Each cell at position (i, j) represents the probability of token j following token i in the input text. Rows are the current token, columns are the next token, and each row sums to 1 by construction. The dense bright cells along a row indicate a token with strong directional preference, and it almost always leads somewhere specific. Sparse or evenly lit rows indicate tokens with many plausible continuations. The heatmap makes the learned transition structure of the corpus directly visible as a geometric object, which no dict-based implementation can produce.
+
+#### Stationary Distribution : 
+<img width="1000" height="500" alt="Stationary Distribution" src="https://github.com/user-attachments/assets/7aa02e15-e785-40e0-87d0-d0e400024826" />
+
+The stationary distribution is the long-run probability of the chain being at each token, regardless of where it started. It is computed as the left eigenvector of the transition matrix corresponding to eigenvalue 1. Tokens with high stationary probability are the ones the chain gravitates toward over time, such that they appear frequently not just in the input text but in the probabilistic structure of the transitions themselves. The distribution tells you what the chain "thinks" the text is fundamentally about.
