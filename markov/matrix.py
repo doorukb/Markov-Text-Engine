@@ -13,6 +13,7 @@ class Markov_Matrix:
         self._matrix: np.ndarray | None = None
         self._counts: dict[State, dict[int, int]] = {}
         self._rows: dict[State, np.ndarray] = {}
+        self._observed_states: list[State] = []
     
     # build transition counts from encoded indices
     def fit(self, indices: list[int], vocab_size: int) -> None:
@@ -26,10 +27,17 @@ class Markov_Matrix:
         self._rows.clear()
         if self.order == 1:
             self._counts = {}
-            self._matrix = self._fit_order_one(indices, vocab_size)
+            self._matrix, self._observed_states = self._fit_order_one(indices, vocab_size)
         else:
             self._matrix = None
             self._counts = self._fit_order_n(indices)
+            self._observed_states = []
+
+    @property
+    def observed_states(self) -> list[State]:
+        if self.order == 1:
+            return list(self._observed_states)
+        return list(self._counts.keys())
 
     # return a probability row for the given state
     def get_row(self, state: State) -> np.ndarray:
@@ -52,13 +60,18 @@ class Markov_Matrix:
         self._rows[state] = row
         return row.copy()
 
-    def fit_order_one(self, indices: list[int], vocab_size: int) -> np.ndarray:
+    def _fit_order_one(self, indices: list[int], vocab_size: int) -> tuple[np.ndarray, list[State]]:
         counts = np.zeros((vocab_size, vocab_size), dtype=np.float64)
         for i in range(len(indices) - 1):
             current, nxt = indices[i], indices[i + 1]
             counts[current, nxt] += 1.0
 
         row_sums = counts.sum(axis=1, keepdims=True)
+        observed = [
+            (i,)
+            for i in range(vocab_size)
+            if row_sums[i, 0] > 0
+        ]
         matrix = np.divide(
             counts,
             row_sums,
@@ -68,9 +81,9 @@ class Markov_Matrix:
         uniform = self._uniform_row()
         zero_rows = row_sums.flatten() == 0
         matrix[zero_rows] = uniform
-        return matrix
+        return matrix, observed
 
-    def fit_order_n(self, indices: list[int]) -> dict[State, dict[int, int]]:
+    def _fit_order_n(self, indices: list[int]) -> dict[State, dict[int, int]]:
         counts: dict[State, dict[int, int]] = {}
         for i in range(len(indices) - self.order):
             state = tuple(indices[i : i + self.order])
@@ -81,7 +94,7 @@ class Markov_Matrix:
             bucket[nxt] = bucket.get(nxt, 0) + 1
         return counts
 
-    def normalize_counts(self, inner: dict[int, int]) -> np.ndarray:
+    def _normalize_counts(self, inner: dict[int, int]) -> np.ndarray:
         row = np.zeros(self.vocab_size, dtype=np.float64)
         for index, count in inner.items():
             row[index] = float(count)
@@ -90,5 +103,5 @@ class Markov_Matrix:
             return self._uniform_row()
         return row / total
 
-    def uniform_row(self) -> np.ndarray:
+    def _uniform_row(self) -> np.ndarray:
         return np.full(self.vocab_size, 1.0 / self.vocab_size, dtype=np.float64)
