@@ -1,9 +1,12 @@
 from __future__ import annotations
+
 import numpy as np
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
+
 from markov.matrix import Markov_Matrix
 from markov.tokenizer import Tokenizer
+
 
 def _token_labels(tokenizer: Tokenizer, indices: list[int] | range) -> list[str]:
     return [tokenizer.index_to_word[int(i)] for i in indices]
@@ -47,7 +50,7 @@ def plot_matrix(matrix: Markov_Matrix, tokenizer: Tokenizer, *, max_tokens: int 
     fig.tight_layout()
     return fig
 
-# bar chart of stationary probabilities, top tokens by mass
+
 def plot_stationary(distribution: np.ndarray, tokenizer: Tokenizer, *, top_n: int = 25) -> Figure:
     n = min(top_n, len(distribution))
     ranked = np.argsort(distribution)[::-1][:n]
@@ -61,7 +64,7 @@ def plot_stationary(distribution: np.ndarray, tokenizer: Tokenizer, *, top_n: in
     fig.tight_layout()
     return fig
 
-# line plot of selected token probabilities across convergence steps
+
 def plot_convergence(series: np.ndarray, tokenizer: Tokenizer, token_indices: list[int]) -> Figure:
     if series.ndim != 2:
         raise ValueError("series must be a 2D array of shape (steps, vocab_size)")
@@ -82,8 +85,7 @@ def plot_convergence(series: np.ndarray, tokenizer: Tokenizer, token_indices: li
     fig.tight_layout()
     return fig
 
-# bar charts of highest and lowest entropy states, 
-# which are essentially the most uncertain and most decisive states
+
 def plot_entropy(entropy: np.ndarray, tokenizer: Tokenizer, *, top_n: int = 20) -> Figure:
     n = min(top_n, len(entropy))
     high_ranked = np.argsort(entropy)[::-1][:n]

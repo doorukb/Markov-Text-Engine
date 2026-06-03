@@ -10,8 +10,8 @@ from markov import analysis
 from markov.generator import generate
 from markov.matrix import Markov_Matrix
 from markov.tokenizer import Tokenizer
-from source.loader import load_text
-from visualization.heatmap import (
+from markov.loader import load_text
+from visualization.plots import (
     plot_convergence,
     plot_entropy,
     plot_matrix,
