@@ -1,4 +1,4 @@
-# Markov Engine
+# Markov Text Engine
 
 - Python 3.10+
 - NumPy
